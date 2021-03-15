@@ -17,7 +17,8 @@ define staging::deploy (
   $group        = undef, #: extract group as this group
   $creates      = undef, #: the file/folder created after extraction. if unspecified defaults to ${target}/${name}
   $unless       = undef, #: alternative way to conditionally extract file
-  $onlyif       = undef  #: alternative way to conditionally extract file
+  $onlyif       = undef, #: alternative way to conditionally extract file
+  $replace      = undef, #: replace with update if true (only works for puppet & local sources)
 ) {
 
   # grab file name if path was passed in
@@ -43,6 +44,7 @@ define staging::deploy (
     novalidate  => $novalidate,
     subdir      => $caller_module_name,
     timeout     => $timeout,
+    replace     => $replace,
   }
 
   staging::extract { $file_name:
@@ -59,6 +61,7 @@ define staging::deploy (
     creates     => $creates,
     unless      => $unless,
     onlyif      => $onlyif,
+    replace     => $replace,
     require     => Staging::File[$file_name],
   }
 
