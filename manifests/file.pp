@@ -24,9 +24,17 @@ define staging::file (
   $owner       = undef, #: file owner in the local filesystem for the target
   $group       = undef, #: file group in the local filesystem for the target
   $mode        = undef, #: file mode in the local filesystem for the target
+  $replace     = false, #: replace existing file with update if true (only works for puppet & local sources)
   $subdir      = $caller_module_name,
   $novalidate  = false #: Whether to bypass https validation - powershell only
 ) {
+
+  # somehow $replace ends up "", which is not valid, but we can assume is false
+  if $replace {
+    $_replace = true
+  } else {
+    $_replace = false
+  }
 
   include staging
 
@@ -93,7 +101,7 @@ define staging::file (
         owner   => $owner,
         group   => $group,
         mode    => $mode,
-        replace => false,
+        replace => $_replace,
       }
     }
     /^[A-Za-z]:/: {
@@ -103,7 +111,7 @@ define staging::file (
           owner              => $owner,
           group              => $group,
           mode               => $mode,
-          replace            => false,
+          replace            => $_replace,
           source_permissions => ignore,
         }
       } else {
@@ -112,7 +120,7 @@ define staging::file (
           owner   => $owner,
           group   => $group,
           mode    => $mode,
-          replace => false,
+          replace => $_replace,
         }
       }
     }
@@ -122,7 +130,7 @@ define staging::file (
         owner   => $owner,
         group   => $group,
         mode    => $mode,
-        replace => false,
+        replace => $_replace,
       }
     }
     /^http:\/\//: {
