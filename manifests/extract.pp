@@ -12,6 +12,7 @@ define staging::extract (
   $use_7zip    = false, #: alternative to unzip command on Windows
   $unzip_opts  = '',    #: additional options to pass the unzip command.
   $untar_opts  = '',    #: additional options to pass to tar.
+  $replace     = undef, #: replace with update if true
   $subdir      = $caller_module_name #: subdir per module in staging directory.
 ) {
 
@@ -31,7 +32,7 @@ define staging::extract (
   # onlyif is not supplied.
   if $creates {
     $creates_path = $creates
-  } elsif ! ($unless or $onlyif) {
+  } else {
     if $name =~ /.tar.gz$/ {
       $folder       = staging_parse($name, 'basename', '.tar.gz')
     } elsif $name =~ /.tar.bz2$/ {
@@ -40,8 +41,22 @@ define staging::extract (
       $folder       = staging_parse($name, 'basename')
     }
     $creates_path = "${target}/${folder}"
+  }
+  # If provided, use unless or onlyif, else provide defaults
+  if $unless or $onlyif {
+    $_creates = $creates
+    $_unless  = $unless
+    $touch    = ""
+  } elsif $replace {
+    # replace with newer copy
+    $_creates = undef
+    $_unless  = "test ${creates_path} -nt ${source_path}"
+    $touch    = "; touch ${creates_path}"
   } else {
-    $creates_path = undef
+     # only run if it doesn't exist yet (the default)
+    $_creates = $creates_path
+    $_unless  = undef
+    $touch    = ""
   }
 
   if scope_defaults('Exec','path') {
@@ -50,8 +65,8 @@ define staging::extract (
       user        => $user,
       group       => $group,
       environment => $environment,
-      creates     => $creates_path,
-      unless      => $unless,
+      creates     => $_creates,
+      unless      => $_unless,
       onlyif      => $onlyif,
       logoutput   => on_failure,
     }
@@ -62,8 +77,8 @@ define staging::extract (
       user        => $user,
       group       => $group,
       environment => $environment,
-      creates     => $creates_path,
-      unless      => $unless,
+      creates     => $_creates,
+      unless      => $_unless,
       onlyif      => $onlyif,
       logoutput   => on_failure,
     }
@@ -133,6 +148,6 @@ define staging::extract (
   }
 
   exec { "extract ${name}":
-    command => $command,
+    command => "${command} ${touch}",
   }
 }
